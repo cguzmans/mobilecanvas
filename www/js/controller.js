@@ -1,8 +1,3 @@
-// function alerting(transaction, results) {
-//     console.log(results);
-//     alert(results);
-// }
-
 angular.module('starter.controllers', [])
     .controller('AppCtrl', function ($ionicPlatform, $cordovaSQLite) {
         try {
@@ -34,7 +29,7 @@ angular.module('starter.controllers', [])
                     sql = [];
 
                     sql.push("CREATE TABLE IF NOT EXISTS wtsgVessels ");
-                    sql.push("vesselId INTEGER PRIMARY KEY, ");
+                    sql.push("(vesselId INTEGER PRIMARY KEY, ");
                     sql.push(" marinaId INTEGER, ");
                     sql.push(" researchId INTEGER, ");
                     sql.push(" isNewBoat INTEGER, ");
@@ -103,65 +98,11 @@ angular.module('starter.controllers', [])
         };
     })
 
-    .controller('zzSyncCtrl', function ($ionicPlatform, $scope, $cordovaSQLite, $sce) {
-        $ionicPlatform.ready(function () {
-
-            var vm = this;
-
-            vm.localCount = 0;
-            vm.remoteCount = 0;
-
-            vm.Clear = function () {
-                alert('clear');
-            };
-            vm.Download = function () {
-                alert('download');
-            };
-
-
-
-            $scope.messages = '';
-
-
-            var db = $cordovaSQLite.openDB({
-                name: "demo.db"
-            });
-
-            $scope.messages = '';
-            $scope.showMessage = function (msg) {
-                $scope.messages += $sce.trustAsHtml('> ' + msg);
-            };
-
-            $scope.showMessage('<b>Opened new DB</b><br/>');
-
-            db.transaction(function (tx) {
- 
-                // Drop demo_table if it exists 
-                tx.executeSql('DROP TABLE IF EXISTS demo_table');
-                $scope.showMessage('<b>Dropped exsiting demo_table</b><br/>');
- 
-                // create table 
-                tx.executeSql('CREATE TABLE IF NOT EXISTS demo_table (id integer primary key, data text, data_num integer)');
-                $scope.showMessage('<b>Created demo_table</b><br/>');
-
-                $scope.showMessage('<b>Inserting Sample Data</b><br/>');
-                // insert sample data
-                tx.executeSql("INSERT INTO demo_table (data, data_num) VALUES (?,?)", ["demo", 100], function (tx, res) {
-
-                    $scope.showMessage('&nbsp;&nbsp;&nbsp;insertId: ' + res.insertId + '<br/>');
-                    $scope.showMessage('&nbsp;&nbsp;&nbsp;rowsAffected: ' + res.rowsAffected + '<br/>');
-
-                });
-            });
-
-        });
-    })
-
     .controller('SyncCtrl', function ($ionicPlatform, $cordovaNetwork, $cordovaSQLite, $rootScope, $scope, MarinasSvc) {
         $ionicPlatform.ready(
             function () {
                 try {
-                   // var vm = this;
+                    // var vm = this;
 
                     $scope.localCount = 0;
                     $scope.remoteCount = 0;
@@ -170,16 +111,18 @@ angular.module('starter.controllers', [])
                         name: "marinaCanvas.db"
                     });
                     db.transaction(function (tx) {
-                        tx.executeSql("SELECT COUNT(Id) FROM wtsgMarinas", [], function (tx, results) {
-                            $scope.remoteCount = results.rows.length;
+                        // tx.executeSql("SELECT * FROM wtsgMarinas", [], function (tx, results) {
+                        tx.executeSql("SELECT COUNT(Id) AS Total FROM wtsgMarinas", [], function (tx, results) {
+                            $scope.remoteCount = results.rows.item(0).Total;
                             alert("table length: " + $scope.remoteCount);
+                            console.log(results);
                         }, alerting, alerting);
                     }, function (err) {
                         alert(err);
                     }, function (s) {
                         alert(s);
                     });
-                    
+
                     $scope.Clear = function () {
                         try {
                             alert('clearing');
@@ -223,27 +166,12 @@ angular.module('starter.controllers', [])
                                         
                                         db.transaction(function (tx) {
                                             var sql = [];
-
-                                            sql.push("CREATE TABLE IF NOT EXISTS wtsgMarinas ");
-                                            sql.push("( Id INTEGER PRIMARY KEY, ");
-                                            sql.push(" profileCode TEXT, ");
-                                            sql.push(" marinaName TEXT, ");
-                                            sql.push(" address1 TEXT, ");
-                                            sql.push(" address2 TEXT, ");
-                                            sql.push(" city TEXT, ");
-                                            sql.push(" zip TEXT, ");
-                                            sql.push(" phone TEXT, ");
-                                            sql.push(" mapView TEXT, ");
-                                            sql.push(" docMaster TEXT ");
-                                            sql.push(" );");
-
-                                            var q = sql.join('');
-                                            tx.executeSql(q, alerting, alerting);
+                                            var q = '';
 
                                             data.forEach(function (element) {
                                                 sql = [];
-                                                sql.push("INSERT INTO wtsgMarinas(Id, profileCode, marinaName, address1, address2, city, zip, phone, mapView, docMaster)");
-                                                sql.push("VALUES (");
+                                                sql.push(" INSERT INTO wtsgMarinas(Id, profileCode, marinaName, address1, address2, city, zip, phone, mapView, docMaster)");
+                                                sql.push(" VALUES (");
                                                 sql.push(element.Id);
                                                 sql.push(", '");
                                                 sql.push(element.profileCode);
@@ -264,14 +192,15 @@ angular.module('starter.controllers', [])
                                                 sql.push("', '");
                                                 sql.push(element.docMaster);
                                                 sql.push("'");
-                                                sql.push(");");
+                                                sql.push("); ");
+
+                                                q = sql.join('');
+                                                tx.executeSql(q, alerting, alerting);
+
                                             }, this);
 
-                                            q = sql.join('');
-                                            tx.executeSql(q, alerting, alerting);
-
-                                            tx.executeSql("SELECT COUNT(Id) FROM wtsgMarinas", [], function (tx, results) {
-                                                $scope.remoteCount = results.rows.length;
+                                            tx.executeSql("SELECT COUNT(Id) AS Total FROM wtsgMarinas", [], function (tx, results) {
+                                                $scope.remoteCount = results.rows.item(0).Total;
                                                 alert("table length: " + $scope.remoteCount);
                                             }, alerting, alerting);
 
@@ -296,25 +225,25 @@ angular.module('starter.controllers', [])
                         }
                     };
 
-                    //                     document.addEventListener("deviceready", function () {
-                    // 
-                    //                         vm.networkType = $cordovaNetwork.getNetwork();
-                    //                         vm.isOnline = $cordovaNetwork.isOnline();
-                    //                         vm.isOffline = $cordovaNetwork.isOffline();
-                    // 
-                    //                         // listen for Online event
-                    //                         $rootScope.$on('$cordovaNetwork:online', function (event, networkState) {
-                    //                             console.log('The device has come online!', networkState);
-                    //                             // Sync local data to your server here
-                    //                         });
-                    //  
-                    //                         // listen for Offline event
-                    //                         $rootScope.$on('$cordovaNetwork:offline', function (event, networkState) {
-                    //                             console.log('The device has gone offline!', networkState);
-                    //                             // the device is offline, we need to store the data locally
-                    //                         });
-                    // 
-                    //                     });
+                    document.addEventListener("deviceready", function () {
+
+                        $scope.networkType = $cordovaNetwork.getNetwork();
+                        $scope.isOnline = $cordovaNetwork.isOnline();
+                        $scope.isOffline = $cordovaNetwork.isOffline();
+                    
+                        // listen for Online event
+                        $rootScope.$on('$cordovaNetwork:online', function (event, networkState) {
+                            console.log('The device has come online!', networkState);
+                            // Sync local data to your server here
+                        });
+                     
+                        // listen for Offline event
+                        $rootScope.$on('$cordovaNetwork:offline', function (event, networkState) {
+                            console.log('The device has gone offline!', networkState);
+                            // the device is offline, we need to store the data locally
+                        });
+
+                    });
 
 
                 } catch (error) {
