@@ -1,10 +1,9 @@
-<ion-view view-title="Database Sync">
+<ion-view view-title="Database Sync" ng-init="activate()">
     <ion-content>
         <p class="padding">
 
-            <div class="text-right">
-                Network type: {{networkType}} <ion-radio data-ng-model="isOnline">Is Online</ion-radio>
-                
+            <div class="text-right" style="padding-right:1em;">
+                Network type: {{networkType}}                
             </div>
 
             <div class="card">

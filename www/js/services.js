@@ -1,56 +1,9 @@
 angular.module('starter.services', [])
 
     .factory('MarinasSvc', ['$http', '$q', MarinasSvc])
+    .factory('VesselSvc', ['$http', '$q', VesselSvc])
     .factory('LocalDbSvc', ['$ionicPlatform', '$cordovaSQLite', '$q', LocalDbSvc])
-
-    .factory('Chats', function () {
-        // Might use a resource here that returns a JSON array
-
-        // Some fake testing data
-        var chats = [{
-            id: 0,
-            name: 'Ben Sparrow',
-            lastText: 'You on your way?',
-            face: 'img/ben.png'
-        }, {
-                id: 1,
-                name: 'Max Lynx',
-                lastText: 'Hey, it\'s me',
-                face: 'img/max.png'
-            }, {
-                id: 2,
-                name: 'Adam Bradleyson',
-                lastText: 'I should buy a boat',
-                face: 'img/adam.jpg'
-            }, {
-                id: 3,
-                name: 'Perry Governor',
-                lastText: 'Look at my mukluks!',
-                face: 'img/perry.png'
-            }, {
-                id: 4,
-                name: 'Mike Harrington',
-                lastText: 'This is wicked good ice cream.',
-                face: 'img/mike.png'
-            }];
-
-        return {
-            all: function () {
-                return chats;
-            },
-            remove: function (chat) {
-                chats.splice(chats.indexOf(chat), 1);
-            },
-            get: function (chatId) {
-                for (var i = 0; i < chats.length; i++) {
-                    if (chats[i].id === parseInt(chatId)) {
-                        return chats[i];
-                    }
-                }
-                return null;
-            }
-        };
-    });
+;
 
 function LocalDbSvc($ionicPlatform, $cordovaSQLite, $q) {
 
@@ -60,24 +13,91 @@ function LocalDbSvc($ionicPlatform, $cordovaSQLite, $q) {
     activate();
 
     function activate() {
+        // $ionicPlatform.ready(function () {
         db = $cordovaSQLite.openDB({
             name: "marinaCanvas.db"
         });
+        //});
     }
 
     var service = {
         createTables: _createTables,
         allMarinas: _getAllMarinas,
+        allVessels: _getAllVessels,
         getMarina: _getMarina,
         getMarinaCount: _getMarinaCount,
-        addMarina: _addMarina,
+        addMarinas: _addMarinas,
+        addVessels: _addVessels,
+        clearLocalDb: _clearLocalDb,
     };
 
     function nullHandler() {
 
     }
     function handleError(transaction, error) {
-        console.log(error.message);
+        console.error(error.message);
+    }
+
+    function _clearLocalMarinaTable() {
+        var deferred = commonQ.defer();
+
+        db.transaction(function (tx) {
+
+            var q = 'DELETE FROM wtsgMarinas;';
+            tx.executeSql(q, [],
+                function (transaction, result) {
+                    var results = result;
+
+                    console.info("Delete wtsgMarina - success ");
+
+                    deferred.resolve(results);
+
+                    // tx.executeSql(" DELETE FROM sqlite_sequence WHERE name ='wtsgMarina'; ");
+                },
+                nullHandler,
+                function (transaction, error) {
+                    console.error("Delete wtsgMarina - error ");
+                    console.error(error.message);
+                    deferred.reject("Delete wtsgMarina - error: " + error.message);
+                });
+        }, function (err) {
+            alert(err);
+        }, function (s) {
+            // alert(s);
+        });
+
+        return deferred.promise;
+    }
+
+    function _clearLocalVesselTable() {
+        var deferred = commonQ.defer();
+
+        db.transaction(function (tx) {
+
+            var q = 'DELETE FROM wtsgVessels;';
+            tx.executeSql(q, [],
+                function (transaction, result) {
+                    var results = result;
+
+                    console.info("Delete wtsgVessels - success ");
+
+                    deferred.resolve(results);
+
+                    //  tx.executeSql(" DELETE FROM sqlite_sequence WHERE name ='wtsgVessels'; ");
+                },
+                nullHandler,
+                function (transaction, error) {
+                    console.log("Delete wtsgVessels - error ");
+                    console.error(error.message);
+                    deferred.reject("Delete wtsgVessels - error: " + error.message);
+                });
+        }, function (err) {
+            alert(err);
+        }, function (s) {
+            // alert(s);
+        });
+
+        return deferred.promise;
     }
 
     function _createMarinaTable() {
@@ -105,14 +125,14 @@ function LocalDbSvc($ionicPlatform, $cordovaSQLite, $q) {
                 function (transaction, result) {
                     var results = result;
 
-                    console.log("Create wtsgMarina - success ");
+                    console.info("Create wtsgMarina - success ");
 
                     deferred.resolve(results);
                 },
                 nullHandler,
                 function (transaction, error) {
                     console.log("Create wtsgMarina - error ");
-                    console.log(error.message);
+                    console.error(error.message);
                     deferred.reject("Create wtsgMarina - error: " + error.message);
                 });
         }, function (err) {
@@ -164,14 +184,14 @@ function LocalDbSvc($ionicPlatform, $cordovaSQLite, $q) {
                 function (transaction, result) {
                     var results = result;
 
-                    console.log("Create wtsgVessel - success ");
+                    console.info("Create wtsgVessel - success ");
 
                     deferred.resolve(results);
                 },
                 nullHandler,
                 function (transaction, error) {
                     console.log("Create wtsgVessel - error ");
-                    console.log(error.message);
+                    console.error(error.message);
                     deferred.reject("Create wtsgVessel - error: " + error.message);
                 });
         }, function (err) {
@@ -183,6 +203,33 @@ function LocalDbSvc($ionicPlatform, $cordovaSQLite, $q) {
         return deferred.promise;
     }
 
+    function _clearLocalDb() {
+        var deferred = commonQ.defer();
+
+        try {
+            _clearLocalMarinaTable()
+                .then(function (data) {
+
+                    _clearLocalVesselTable()
+                        .then(function (data2) {
+                            deferred.resolve(data2);
+                        })
+                        .catch(function (error2) {
+                            console.error(error2.data);
+                            deferred.reject("error: " + error2.data);
+                        });
+
+                }).catch(function (error) {
+                    console.error(error.data);
+                    deferred.reject("error: " + error.data);
+                });
+
+        } catch (error) {
+            alert(error.message);
+        }
+
+        return deferred.promise;
+    }
 
     function _createTables() {
         var deferred = commonQ.defer();
@@ -196,12 +243,12 @@ function LocalDbSvc($ionicPlatform, $cordovaSQLite, $q) {
                             deferred.resolve(data2);
                         })
                         .catch(function (error2) {
-                            console.log(error2.data);
+                            console.error(error2.data);
                             deferred.reject("error: " + error2.data);
                         });
 
                 }).catch(function (error) {
-                    console.log(error.data);
+                    console.error(error.data);
                     deferred.reject("error: " + error.data);
                 });
 
@@ -212,12 +259,249 @@ function LocalDbSvc($ionicPlatform, $cordovaSQLite, $q) {
         return deferred.promise;
     }
 
-    function _addMarina(params) {
+    function _addVessels(params) {
+        var deferred = commonQ.defer();
 
+        try {
+
+            console.info("adding vessels" + params);
+            if (params.length > 0) {
+
+                db.transaction(function (tx) {
+                    var sql = [];
+                    var q = '';
+
+                    params.forEach(function (element) {
+                        sql = [];
+                        sql.push(" INSERT INTO wtsgVessels(vesselId, marinaId, researchId, isNewBoat, slipNumber, vesselName, manufacturer, account, model, vin, inventoryDate, originalInventoryDate, bodyType, recordType, previousValue, hullMaterial, length, remark1, remark2, remark3, condition, rcYear, status, isSlipPar, updatedDate)");
+                        sql.push(" VALUES (");
+                        sql.push(element.vesselId);
+                        sql.push(", '");
+                        sql.push(element.marinaId);
+                        sql.push("', '");
+                        sql.push(element.researchId);
+                        sql.push("', '");
+                        sql.push(element.isNewBoat);
+                        sql.push("', '");
+                        sql.push(element.slipNumber);
+                        sql.push("', '");
+                        sql.push(element.vesselName);
+                        sql.push("', '");
+                        sql.push(element.manufacturer);
+                        sql.push("', '");
+                        sql.push(element.account);
+                        sql.push("', '");
+                        sql.push(element.model);
+                        sql.push("', '");
+                        sql.push(element.vin);
+                        sql.push("', '");
+                        sql.push(element.inventoryDate);
+                        sql.push("', '");
+                        sql.push(element.originalinventoryDate);
+                        sql.push("', '");
+                        sql.push(element.bodyType);
+                        sql.push("', '");
+                        sql.push(element.recordType);
+                        sql.push("', '");
+                        sql.push(element.previousValue);
+                        sql.push("', '");
+                        sql.push(element.hullMaterial);
+                        sql.push("', '");
+                        sql.push(element.length);
+                        sql.push("', '");
+                        sql.push(element.remark1);
+                        sql.push("', '");
+                        sql.push(element.remark2);
+                        sql.push("', '");
+                        sql.push(element.remark3);
+                        sql.push("', '");
+                        sql.push(element.condition);
+                        sql.push("', '");
+                        sql.push(element.rcYear);
+                        sql.push("', '");
+                        sql.push(element.status);
+                        sql.push("', '");
+                        sql.push(element.isSlipPar);
+                        sql.push("', '");
+                        sql.push(element.updatedDate);
+                        sql.push("'");
+                        sql.push("); ");
+
+                        q = sql.join('');
+                        tx.executeSql(q, [],
+                            function (transaction, results) {
+                                var result = results.rows.length;
+
+                                console.info("wtsgVessels insert - " + result);
+
+                                deferred.resolve(result);
+                            },
+                            nullHandler,
+                            function (transaction, error) {
+                                console.log("wtsgVessels insert - error ");
+                                console.error(error.message);
+                                deferred.reject("wtsgVessels insert - error: " + error.message);
+                            });
+
+                    }, this);
+                }, function (err) {
+                    alert(err);
+                }, function (s) {
+                    // alert(s);
+                });
+
+            }
+        } catch (error) {
+            alert(error.message);
+        }
+
+        return deferred.promise;
     }
 
-    function _getAllMarinas() {
+    function _addMarinas(params) {
+        var deferred = commonQ.defer();
 
+        try {
+
+            console.info("adding marinas" + params);
+            if (params.length > 0) {
+
+                db.transaction(function (tx) {
+                    var sql = [];
+                    var q = '';
+
+                    params.forEach(function (element) {
+                        sql = [];
+                        sql.push(" INSERT INTO wtsgMarinas(Id, profileCode, marinaName, address1, address2, city, zip, phone, mapView, docMaster)");
+                        sql.push(" VALUES (");
+                        sql.push(element.Id);
+                        sql.push(", '");
+                        sql.push(element.profileCode);
+                        sql.push("', '");
+                        sql.push(element.name);
+                        sql.push("', '");
+                        sql.push(element.address1);
+                        sql.push("', '");
+                        sql.push(element.address2);
+                        sql.push("', '");
+                        sql.push(element.city);
+                        sql.push("', '");
+                        sql.push(element.zip);
+                        sql.push("', '");
+                        sql.push(element.phone);
+                        sql.push("', '");
+                        sql.push(element.mapView);
+                        sql.push("', '");
+                        sql.push(element.docMaster);
+                        sql.push("'");
+                        sql.push("); ");
+
+                        q = sql.join('');
+                        tx.executeSql(q, [],
+                            function (transaction, results) {
+                                var result = results.rows.length;
+
+                                console.info("wtsgMarina insert - " + result);
+
+                                deferred.resolve(result);
+                            },
+                            nullHandler,
+                            function (transaction, error) {
+                                console.log("wtsgMarina insert - error ");
+                                console.error(error.message);
+                                deferred.reject("wtsgMarina insert - error: " + error.message);
+                            });
+
+                    }, this);
+                }, function (err) {
+                    alert(err);
+                }, function (s) {
+                    // alert(s);
+                });
+
+            }
+        } catch (error) {
+            alert(error.message);
+        }
+
+        return deferred.promise;
+    }
+
+    function _getAllVessels() {
+        var deferred = commonQ.defer();
+
+        try {
+            db.transaction(function (tx) {
+
+                var q = "SELECT * FROM wtsgVessels";
+                tx.executeSql(q, [],
+                    function (transaction, results) {
+                        var result = [];
+
+                        for (var index = 0; index < results.rows.length; index++) {
+                            var element = results.rows.item(index);
+                            result.push(element);
+                        }
+
+                        console.info("wtsgVessels all - " + result);
+
+                        deferred.resolve(result);
+                    },
+                    nullHandler,
+                    function (transaction, error) {
+                        console.error("wtsgVessels all - error ");
+                        console.error(error.message);
+                        deferred.reject("wtsgVessels all - error: " + error.message);
+                    });
+            }, function (err) {
+                alert(err);
+            }, function (s) {
+                // alert(s);
+            });
+
+        } catch (error) {
+            alert(error.message);
+        }
+
+        return deferred.promise;
+    }
+    function _getAllMarinas() {
+        var deferred = commonQ.defer();
+
+        try {
+            db.transaction(function (tx) {
+
+                var q = "SELECT * FROM wtsgMarinas";
+                tx.executeSql(q, [],
+                    function (transaction, results) {
+                        var result = [];
+
+                        for (var index = 0; index < results.rows.length; index++) {
+                            var element = results.rows.item(index);
+                            result.push(element);
+                        }
+
+                        console.info("wtsgMarina all - " + result);
+
+                        deferred.resolve(result);
+                    },
+                    nullHandler,
+                    function (transaction, error) {
+                        console.error("wtsgMarina all - error ");
+                        console.error(error.message);
+                        deferred.reject("wtsgMarina all - error: " + error.message);
+                    });
+            }, function (err) {
+                alert(err);
+            }, function (s) {
+                // alert(s);
+            });
+
+        } catch (error) {
+            alert(error.message);
+        }
+
+        return deferred.promise;
 
     }
 
@@ -236,14 +520,14 @@ function LocalDbSvc($ionicPlatform, $cordovaSQLite, $q) {
                     function (transaction, results) {
                         var result = results.rows.item(0).Total;
 
-                        console.log("wtsgMarina Count - " + result);
+                        console.info("wtsgMarina Count - " + result);
 
                         deferred.resolve(result);
                     },
                     nullHandler,
                     function (transaction, error) {
-                        console.log("wtsgMarina Count - error ");
-                        console.log(error.message);
+                        console.error("wtsgMarina Count - error ");
+                        console.error(error.message);
                         deferred.reject("wtsgMarina Count - error: " + error.message);
                     });
             }, function (err) {
@@ -262,6 +546,54 @@ function LocalDbSvc($ionicPlatform, $cordovaSQLite, $q) {
     return service;
 }
 
+function VesselSvc($http, $q) {
+    var commonQ = $q;
+
+    activate();
+
+    function activate() {
+
+    }
+
+    var service = {
+        all: _getAllVessels,
+        get: _getVessel,
+        getCount: _getVesselCount,
+    };
+
+    function _getVesselCount() {
+        var deferred = commonQ.defer();
+        deferred.resolve(9);
+        return deferred.promise;
+    }
+
+    function _getVessel(pi_id) {
+        return 0;
+    }
+
+    function _getAllVessels() {
+        var deferred = commonQ.defer();
+
+        // var r =
+        $http
+            .post("http://10.10.16.87/mobile2/Home.aspx/GetVessels", { pi: '' })
+            .then(function (data) {
+                var l = JSON.parse(data.data.d);
+                console.info("getAllVessels: ", l);
+                deferred.resolve(l);
+            })
+            .catch(function (error) {
+                alert(error.data);
+                console.error(error.data);
+                deferred.reject("error: " + error.data);
+            });
+
+
+        return deferred.promise;
+    }
+    return service;
+}
+
 function MarinasSvc($http, $q) {
 
     var commonQ = $q;
@@ -275,7 +607,29 @@ function MarinasSvc($http, $q) {
     var service = {
         all: _getAllMarinas,
         get: _getMarina,
+        getCount: _getMarinaCount,
     };
+
+    function _getMarinaCount() {
+        var deferred = commonQ.defer();
+        deferred.resolve(9);
+        // 
+        //         
+        //         $http
+        //             .post("http://10.10.16.87/mobile2/Home.aspx/GetMarinaCount", { pi: '' })
+        //             .then(function (data) {
+        //                 var l = JSON.parse(data.data.d);
+        //                 console.info("getMarinaCount: ", l);
+        //                 deferred.resolve(l);
+        //             })
+        //             .catch(function (error) {
+        //                 alert(error.data);
+        //                 console.error(error.data);
+        //                 deferred.reject("error: " + error.data);
+        //             });
+        // 
+        return deferred.promise;
+    }
 
     function _getAllMarinas() {
         var deferred = commonQ.defer();
@@ -285,12 +639,12 @@ function MarinasSvc($http, $q) {
             .post("http://10.10.16.87/mobile2/Home.aspx/GetMarinas", { pi: '' })
             .then(function (data) {
                 var l = JSON.parse(data.data.d);
-                console.log("getAllMarinas: ", l);
+                console.info("getAllMarinas: ", l);
                 deferred.resolve(l);
             })
             .catch(function (error) {
                 alert(error.data);
-                console.log(error.data);
+                console.error(error.data);
                 deferred.reject("error: " + error.data);
             });
 
