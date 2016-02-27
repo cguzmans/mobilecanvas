@@ -273,61 +273,61 @@ function LocalDbSvc($ionicPlatform, $cordovaSQLite, $q) {
 
                     params.forEach(function (element) {
                         sql = [];
-                        sql.push(" INSERT INTO wtsgVessels(vesselId, marinaId, researchId, isNewBoat, slipNumber, vesselName, manufacturer, account, model, vin, inventoryDate, originalInventoryDate, bodyType, recordType, previousValue, hullMaterial, length, remark1, remark2, remark3, condition, rcYear, status, isSlipPar, updatedDate)");
-                        sql.push(" VALUES (");
+                        sql.push(' INSERT INTO wtsgVessels(vesselId, marinaId, researchId, isNewBoat, slipNumber, vesselName, manufacturer, account, model, vin, inventoryDate, originalInventoryDate, bodyType, recordType, previousValue, hullMaterial, length, remark1, remark2, remark3, condition, rcYear, status, isSlipPar, updatedDate)');
+                        sql.push(' VALUES (');
                         sql.push(element.vesselId);
-                        sql.push(", '");
+                        sql.push(', "');
                         sql.push(element.marinaId);
-                        sql.push("', '");
+                        sql.push('", "');
                         sql.push(element.researchId);
-                        sql.push("', '");
+                        sql.push('", "');
                         sql.push(element.isNewBoat);
-                        sql.push("', '");
+                        sql.push('", "');
                         sql.push(element.slipNumber);
-                        sql.push("', '");
+                        sql.push('", "');
                         sql.push(element.vesselName);
-                        sql.push("', '");
+                        sql.push('", "');
                         sql.push(element.manufacturer);
-                        sql.push("', '");
+                        sql.push('", "');
                         sql.push(element.account);
-                        sql.push("', '");
+                        sql.push('", "');
                         sql.push(element.model);
-                        sql.push("', '");
+                        sql.push('", "');
                         sql.push(element.vin);
-                        sql.push("', '");
+                        sql.push('", "');
                         sql.push(element.inventoryDate);
-                        sql.push("', '");
+                        sql.push('", "');
                         sql.push(element.originalinventoryDate);
-                        sql.push("', '");
+                        sql.push('", "');
                         sql.push(element.bodyType);
-                        sql.push("', '");
+                        sql.push('", "');
                         sql.push(element.recordType);
-                        sql.push("', '");
+                        sql.push('", "');
                         sql.push(element.previousValue);
-                        sql.push("', '");
+                        sql.push('", "');
                         sql.push(element.hullMaterial);
-                        sql.push("', '");
+                        sql.push('", "');
                         sql.push(element.length);
-                        sql.push("', '");
+                        sql.push('", "');
                         sql.push(element.remark1);
-                        sql.push("', '");
+                        sql.push('", "');
                         sql.push(element.remark2);
-                        sql.push("', '");
+                        sql.push('", "');
                         sql.push(element.remark3);
-                        sql.push("', '");
+                        sql.push('", "');
                         sql.push(element.condition);
-                        sql.push("', '");
+                        sql.push('", "');
                         sql.push(element.rcYear);
-                        sql.push("', '");
+                        sql.push('", "');
                         sql.push(element.status);
-                        sql.push("', '");
+                        sql.push('", "');
                         sql.push(element.isSlipPar);
-                        sql.push("', '");
+                        sql.push('", "');
                         sql.push(element.updatedDate);
-                        sql.push("'");
-                        sql.push("); ");
+                        sql.push('"');
+                        sql.push('); ');
 
-                        q = sql.join('');
+                        q = sql.join("");
                         tx.executeSql(q, [],
                             function (transaction, results) {
                                 var result = results.rows.length;
@@ -571,12 +571,12 @@ function VesselSvc($http, $q) {
         return 0;
     }
 
-    function _getAllVessels() {
+    function _getpagedvessels(page, size) {
         var deferred = commonQ.defer();
-
         // var r =
         $http
-            .post("http://10.10.16.87/mobile2/Home.aspx/GetVessels", { pi: '' })
+        //.post("http://10.10.16.87/mobile2/Home.aspx/GetVessels", { pi: '' })
+            .post("http://10.10.16.68/MarinaCordovaWebServices1/Home.aspx/GetVessels", { page: page, count: size })
             .then(function (data) {
                 var l = JSON.parse(data.data.d);
                 console.info("getAllVessels: ", l);
@@ -587,7 +587,32 @@ function VesselSvc($http, $q) {
                 console.error(error.data);
                 deferred.reject("error: " + error.data);
             });
+        return deferred.promise;
+    }
 
+    function _recursivepagedvessels(deferred, page, size) {
+
+        _getpagedvessels(page, size).then(function (data) {
+            if (data.length > 0) {
+                deferred.notify(data);
+                page = page + 1;
+                _recursivepagedvessels(deferred, page, size);
+            }
+            else {
+                //end it
+                deferred.resolve(true);
+            }
+        }).catch(function (error) {
+            deferred.reject("error:" + error);
+        });
+    }
+
+    function _getAllVessels() {
+        var deferred = commonQ.defer();
+        var size = 100;
+        var page = 0;
+
+        _recursivepagedvessels(deferred, page, size);
 
         return deferred.promise;
     }
@@ -636,7 +661,8 @@ function MarinasSvc($http, $q) {
 
         // var r =
         $http
-            .post("http://10.10.16.87/mobile2/Home.aspx/GetMarinas", { pi: '' })
+        //.post("http://10.10.16.87/mobile2/Home.aspx/GetMarinas", { pi: '' })            
+            .post("http://10.10.16.68/MarinaCordovaWebServices1/Home.aspx/GetMarinas", { pi: '' })
             .then(function (data) {
                 var l = JSON.parse(data.data.d);
                 console.info("getAllMarinas: ", l);
